@@ -19,6 +19,8 @@ public class WanAndroidApp extends Application  implements HasActivityInjector {
 
     private static WanAndroidApp instance;
     private RefWatcher refWatcher;
+    public static boolean isFirstRun = true;
+
     @Override
     public AndroidInjector<Activity> activityInjector() {
         return dispatchingAndroidInjector;

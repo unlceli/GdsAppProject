@@ -2,12 +2,14 @@ package com.example.lll.gdsappproject.app;
 
 import android.app.Activity;
 import android.app.Application;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatDelegate;
 
 import com.example.lll.gdsappproject.R;
 import com.scwang.smartrefresh.header.DeliveryHeader;
 import com.scwang.smartrefresh.layout.SmartRefreshLayout;
 import com.scwang.smartrefresh.layout.api.RefreshFooter;
+import com.scwang.smartrefresh.layout.footer.BallPulseFooter;
 import com.squareup.leakcanary.RefWatcher;
 
 import javax.inject.Inject;
@@ -36,9 +38,17 @@ public class WanAndroidApp extends Application  implements HasActivityInjector {
             return (RefreshFooter) new DeliveryHeader(context);
 
         }));
+        //默认是 BallPulseFooter
+        SmartRefreshLayout.setDefaultRefreshFooterCreator(((context, layout) -> {
+            return  new BallPulseFooter(context).setAnimatingColor(ContextCompat.getColor(context,R.color.colorPrimary));
+        }));
     }
     @Override
     public AndroidInjector<Activity> activityInjector() {
         return dispatchingAndroidInjector;
+    }
+
+    public static synchronized WanAndroidApp getInstance(){
+        return  instance;
     }
 }

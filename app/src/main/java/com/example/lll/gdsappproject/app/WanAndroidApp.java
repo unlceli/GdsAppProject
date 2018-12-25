@@ -9,12 +9,15 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatDelegate;
 import android.util.Log;
 
+import com.bumptech.glide.Glide;
 import com.example.lll.gdsappproject.BuildConfig;
 import com.example.lll.gdsappproject.R;
 import com.example.lll.gdsappproject.core.DataManager;
 import com.example.lll.gdsappproject.core.dao.DaoMaster;
 import com.example.lll.gdsappproject.core.dao.DaoSession;
+import com.example.lll.gdsappproject.utils.CommonUtils;
 import com.example.lll.gdsappproject.utils.logger.TxtFormatStrategy;
+import com.facebook.stetho.Stetho;
 import com.orhanobut.logger.AndroidLogAdapter;
 import com.orhanobut.logger.DiskLogAdapter;
 import com.orhanobut.logger.Logger;
@@ -23,7 +26,9 @@ import com.scwang.smartrefresh.header.DeliveryHeader;
 import com.scwang.smartrefresh.layout.SmartRefreshLayout;
 import com.scwang.smartrefresh.layout.api.RefreshFooter;
 import com.scwang.smartrefresh.layout.footer.BallPulseFooter;
+import com.squareup.leakcanary.LeakCanary;
 import com.squareup.leakcanary.RefWatcher;
+import com.tencent.bugly.crashreport.CrashReport;
 
 
 import javax.inject.Inject;
@@ -36,7 +41,7 @@ public class WanAndroidApp extends Application implements HasActivityInjector {
 
 
     @Inject
-    DispatchingAndroidInjector<Activity> dispatchingAndroidInjector;
+    DispatchingAndroidInjector<Activity> mAndroidInjector;
 
     private static WanAndroidApp instance;
     private RefWatcher refWatcher;
@@ -59,10 +64,6 @@ public class WanAndroidApp extends Application implements HasActivityInjector {
         }));
     }
 
-    @Override
-    public AndroidInjector<Activity> activityInjector() {
-        return dispatchingAndroidInjector;
-    }
 
     public static synchronized WanAndroidApp getInstance() {
         return instance;
@@ -83,10 +84,46 @@ public class WanAndroidApp extends Application implements HasActivityInjector {
     public void onCreate() {
         super.onCreate();
         initGreenDao();
-        instance =this;
+        instance = this;
 
+        initBugly();
 
+        initLogger();
 
+        if (BuildConfig.DEBUG) {
+            Stetho.initializeWithDefaults(this);
+        }
+        if (LeakCanary.isInAnalyzerProcess(this)) {
+            return;
+        }
+        refWatcher = LeakCanary.install(this);
+
+    }
+
+    @Override
+    public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        if (level == TRIM_MEMORY_UI_HIDDEN) {
+            Glide.get(this).clearMemory();
+        }
+        Glide.get(this).trimMemory(level);
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        Glide.get(this).clearMemory();
+    }
+
+    private void initBugly() {
+        // 获取当前包名
+        String packageName = getApplicationContext().getPackageName();
+        // 获取当前进程名
+        String processName = CommonUtils.getProcessName(android.os.Process.myPid());
+        // 设置是否为上报进程
+        CrashReport.UserStrategy strategy = new CrashReport.UserStrategy(getApplicationContext());
+        strategy.setUploadProcess(processName == null || processName.equals(packageName));
+        CrashReport.initCrashReport(getApplicationContext(), Constants.BUGLY_ID, false, strategy);
     }
 
     private void initGreenDao() {
@@ -108,4 +145,10 @@ public class WanAndroidApp extends Application implements HasActivityInjector {
         //把log 存到本地
         Logger.addLogAdapter(new DiskLogAdapter(TxtFormatStrategy.newBuilder().tag(getString(R.string.app_name)).build(getPackageName(), getString(R.string.app_name))));
     }
+
+    @Override
+    public AndroidInjector<Activity> activityInjector() {
+        return mAndroidInjector;
+    }
+
 }

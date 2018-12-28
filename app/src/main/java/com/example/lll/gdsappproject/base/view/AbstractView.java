@@ -1,6 +1,15 @@
 package com.example.lll.gdsappproject.base.view;
 
+
+/**
+ *  View 基类
+ *
+ * @author quchao
+ * @date 2017/11/27
+ */
+
 public interface AbstractView {
+
     /**
      * Use night mode
      *
@@ -68,4 +77,5 @@ public interface AbstractView {
      * @param message Message
      */
     void showSnackBar(String message);
+
 }

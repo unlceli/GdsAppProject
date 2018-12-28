@@ -2,22 +2,34 @@ package com.example.lll.gdsappproject.base.activity;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.app.SupportActivity;
+import android.support.annotation.VisibleForTesting;
+import android.support.test.espresso.IdlingResource;
 
 import com.example.lll.gdsappproject.component.ActivityCollector;
+import com.example.lll.gdsappproject.test.EspressoIdlingResource;
 
 import butterknife.ButterKnife;
 import butterknife.Unbinder;
+import me.yokeyword.fragmentation.SupportActivity;
+
+
+/**
+ * Common simple Activity
+ *
+ * @author quchao
+ * @date 2017/11/28
+ */
 
 public abstract class AbstractSimpleActivity extends SupportActivity {
-    private Unbinder unbinder;
+
+    private Unbinder unBinder;
     protected AbstractSimpleActivity mActivity;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(getLayoutId());
-        unbinder = ButterKnife.bind(this);
+        unBinder = ButterKnife.bind(this);
         mActivity = this;
         ActivityCollector.getInstance().addActivity(this);
         onViewCreated();
@@ -29,10 +41,15 @@ public abstract class AbstractSimpleActivity extends SupportActivity {
     protected void onDestroy() {
         super.onDestroy();
         ActivityCollector.getInstance().removeActivity(this);
-        if (unbinder != null && unbinder != Unbinder.EMPTY) {
-            unbinder.unbind();
-            unbinder = null;
+        if (unBinder != null && unBinder != Unbinder.EMPTY) {
+            unBinder.unbind();
+            unBinder = null;
         }
+    }
+
+    @VisibleForTesting
+    public IdlingResource getCountingIdlingResource() {
+        return EspressoIdlingResource.getIdlingResource();
     }
 
     /**
@@ -56,4 +73,5 @@ public abstract class AbstractSimpleActivity extends SupportActivity {
      * 初始化数据
      */
     protected abstract void initEventAndData();
+
 }

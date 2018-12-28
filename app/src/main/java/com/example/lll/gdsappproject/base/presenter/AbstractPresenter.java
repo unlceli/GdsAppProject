@@ -4,7 +4,15 @@ import com.example.lll.gdsappproject.base.view.AbstractView;
 
 import io.reactivex.disposables.Disposable;
 
+/**
+ * Presenter 基类
+ *
+ * @author quchao
+ * @date 2017/11/27
+ */
+
 public interface AbstractPresenter<T extends AbstractView> {
+
     /**
      * 注入View
      *
@@ -72,4 +80,6 @@ public interface AbstractPresenter<T extends AbstractView> {
      * @return current page
      */
     int getCurrentPage();
+
+
 }

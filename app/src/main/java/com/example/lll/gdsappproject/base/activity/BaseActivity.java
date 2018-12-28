@@ -7,6 +7,7 @@ import android.support.v7.app.AppCompatDelegate;
 
 import com.example.lll.gdsappproject.base.presenter.AbstractPresenter;
 import com.example.lll.gdsappproject.base.view.AbstractView;
+import com.example.lll.gdsappproject.utils.CommonUtils;
 
 import javax.inject.Inject;
 
@@ -15,8 +16,16 @@ import dagger.android.AndroidInjector;
 import dagger.android.DispatchingAndroidInjector;
 import dagger.android.support.HasSupportFragmentInjector;
 
-public abstract class BaseActivity<T extends AbstractPresenter> extends AbstractSimpleActivity
-        implements HasSupportFragmentInjector, AbstractView {
+/**
+ * MVP模式的Base Activity
+ *
+ * @author quchao
+ * @date 2017/11/28
+ */
+
+public abstract class BaseActivity<T extends AbstractPresenter> extends AbstractSimpleActivity implements
+        HasSupportFragmentInjector,
+        AbstractView {
 
     @Inject
     DispatchingAndroidInjector<Fragment> mFragmentDispatchingAndroidInjector;
@@ -38,7 +47,6 @@ public abstract class BaseActivity<T extends AbstractPresenter> extends Abstract
 
     @Override
     protected void onDestroy() {
-
         if (mPresenter != null) {
             mPresenter.detachView();
             mPresenter = null;
@@ -48,16 +56,74 @@ public abstract class BaseActivity<T extends AbstractPresenter> extends Abstract
 
     @Override
     public AndroidInjector<Fragment> supportFragmentInjector() {
-        return  mFragmentDispatchingAndroidInjector;
+        return mFragmentDispatchingAndroidInjector;
     }
 
     @Override
-    public void useNightMode(boolean isNightMode) {
-        if (isNightMode){
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-        }else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+    public void useNightMode(boolean isNight) {
+        if (isNight) {
+            AppCompatDelegate.setDefaultNightMode(
+                    AppCompatDelegate.MODE_NIGHT_YES);
+        } else {
+            AppCompatDelegate.setDefaultNightMode(
+                    AppCompatDelegate.MODE_NIGHT_NO);
         }
         recreate();
     }
+
+    @Override
+    public void showErrorMsg(String errorMsg) {
+        CommonUtils.showSnackMessage(this, errorMsg);
+    }
+
+    @Override
+    public void showNormal() {
+
+    }
+
+    @Override
+    public void showError() {
+
+    }
+
+    @Override
+    public void showLoading() {
+
+    }
+
+    @Override
+    public void reload() {
+
+    }
+
+    @Override
+    public void showCollectSuccess() {
+
+    }
+
+    @Override
+    public void showCancelCollectSuccess() {
+
+    }
+
+    @Override
+    public void showLoginView() {
+
+    }
+
+    @Override
+    public void showLogoutView() {
+
+    }
+
+    @Override
+    public void showToast(String message) {
+        CommonUtils.showMessage(this, message);
+    }
+
+    @Override
+    public void showSnackBar(String message) {
+        CommonUtils.showSnackMessage(this, message);
+    }
+
 }

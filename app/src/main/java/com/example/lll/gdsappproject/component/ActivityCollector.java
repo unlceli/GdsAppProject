@@ -5,8 +5,15 @@ import android.app.Activity;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * 一键退出App
+ *
+ * @author quchao
+ * @date 2017/11/28
+ */
 
 public class ActivityCollector {
+
     private static ActivityCollector activityCollector;
 
     public synchronized static ActivityCollector getInstance() {
@@ -18,16 +25,16 @@ public class ActivityCollector {
 
     private Set<Activity> allActivities;
 
-    public void addActivity(Activity activity) {
-        if (activityCollector == null) {
+    public void addActivity(Activity act) {
+        if (allActivities == null) {
             allActivities = new HashSet<>();
         }
-        allActivities.add(activity);
+        allActivities.add(act);
     }
 
-    public void removeActivity(Activity activity) {
+    public void removeActivity(Activity act) {
         if (allActivities != null) {
-            allActivities.remove(activity);
+            allActivities.remove(act);
         }
     }
 
@@ -42,4 +49,5 @@ public class ActivityCollector {
         android.os.Process.killProcess(android.os.Process.myPid());
         System.exit(0);
     }
+
 }

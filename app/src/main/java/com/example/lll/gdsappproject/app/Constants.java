@@ -1,7 +1,6 @@
 package com.example.lll.gdsappproject.app;
 
 
-
 import android.graphics.Color;
 
 import com.example.lll.gdsappproject.R;

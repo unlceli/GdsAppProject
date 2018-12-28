@@ -7,14 +7,15 @@ import android.database.sqlite.SQLiteDatabase;
 import android.support.multidex.MultiDex;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatDelegate;
-import android.util.Log;
 
 import com.bumptech.glide.Glide;
 import com.example.lll.gdsappproject.BuildConfig;
-import com.example.lll.gdsappproject.R;
-import com.example.lll.gdsappproject.core.DataManager;
 import com.example.lll.gdsappproject.core.dao.DaoMaster;
 import com.example.lll.gdsappproject.core.dao.DaoSession;
+import com.example.lll.gdsappproject.di.component.AppComponent;
+import com.example.lll.gdsappproject.di.component.DaggerAppComponent;
+import com.example.lll.gdsappproject.di.module.AppModule;
+import com.example.lll.gdsappproject.di.module.HttpModule;
 import com.example.lll.gdsappproject.utils.CommonUtils;
 import com.example.lll.gdsappproject.utils.logger.TxtFormatStrategy;
 import com.facebook.stetho.Stetho;
@@ -24,12 +25,10 @@ import com.orhanobut.logger.Logger;
 import com.orhanobut.logger.PrettyFormatStrategy;
 import com.scwang.smartrefresh.header.DeliveryHeader;
 import com.scwang.smartrefresh.layout.SmartRefreshLayout;
-import com.scwang.smartrefresh.layout.api.RefreshFooter;
 import com.scwang.smartrefresh.layout.footer.BallPulseFooter;
 import com.squareup.leakcanary.LeakCanary;
 import com.squareup.leakcanary.RefWatcher;
 import com.tencent.bugly.crashreport.CrashReport;
-
 
 import javax.inject.Inject;
 
@@ -37,8 +36,11 @@ import dagger.android.AndroidInjector;
 import dagger.android.DispatchingAndroidInjector;
 import dagger.android.HasActivityInjector;
 
+/**
+ * @author quchao
+ * @date 2017/11/27
+ */
 public class WanAndroidApp extends Application implements HasActivityInjector {
-
 
     @Inject
     DispatchingAndroidInjector<Activity> mAndroidInjector;
@@ -46,22 +48,23 @@ public class WanAndroidApp extends Application implements HasActivityInjector {
     private static WanAndroidApp instance;
     private RefWatcher refWatcher;
     public static boolean isFirstRun = true;
-
+    private static volatile AppComponent appComponent;
     private DaoSession mDaoSession;
 
+    //static 代码段可以防止内存泄露, 全局设置刷新头部及尾部，优先级最低
     static {
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-        SmartRefreshLayout.setDefaultRefreshFooterCreator(((context, layout) -> {
+        AppCompatDelegate.setDefaultNightMode(
+                AppCompatDelegate.MODE_NIGHT_NO);
+        SmartRefreshLayout.setDefaultRefreshHeaderCreator((context, layout) -> {
             //全局设置主题颜色
             layout.setPrimaryColorsId(R.color.colorPrimary, android.R.color.white);
-            //指定Delivery header， 默认是内塞尔雷达 Header
-            return (RefreshFooter) new DeliveryHeader(context);
-
-        }));
-        //默认是 BallPulseFooter
-        SmartRefreshLayout.setDefaultRefreshFooterCreator(((context, layout) -> {
+            //指定为Delivery Header，默认是贝塞尔雷达Header
+            return new DeliveryHeader(context);
+        });
+        SmartRefreshLayout.setDefaultRefreshFooterCreator((context, layout) -> {
+            //默认是 BallPulseFooter
             return new BallPulseFooter(context).setAnimatingColor(ContextCompat.getColor(context, R.color.colorPrimary));
-        }));
+        });
     }
 
 
@@ -70,8 +73,8 @@ public class WanAndroidApp extends Application implements HasActivityInjector {
     }
 
     public static RefWatcher getRefWatcher(Context context) {
-        WanAndroidApp androidApp = (WanAndroidApp) context.getApplicationContext();
-        return androidApp.refWatcher;
+        WanAndroidApp application = (WanAndroidApp) context.getApplicationContext();
+        return application.refWatcher;
     }
 
     @Override
@@ -84,6 +87,11 @@ public class WanAndroidApp extends Application implements HasActivityInjector {
     public void onCreate() {
         super.onCreate();
         initGreenDao();
+
+      /*  DaggerAppComponent.builder()
+                .appModule(new AppModule(instance))
+                .httpModule(new HttpModule())
+                .build().inject(this);*/
         instance = this;
 
         initBugly();
@@ -93,9 +101,11 @@ public class WanAndroidApp extends Application implements HasActivityInjector {
         if (BuildConfig.DEBUG) {
             Stetho.initializeWithDefaults(this);
         }
+
         if (LeakCanary.isInAnalyzerProcess(this)) {
             return;
         }
+
         refWatcher = LeakCanary.install(this);
 
     }
@@ -115,6 +125,28 @@ public class WanAndroidApp extends Application implements HasActivityInjector {
         Glide.get(this).clearMemory();
     }
 
+    private void initGreenDao() {
+        DaoMaster.DevOpenHelper devOpenHelper = new DaoMaster.DevOpenHelper(this, Constants.DB_NAME);
+        SQLiteDatabase database = devOpenHelper.getWritableDatabase();
+        DaoMaster daoMaster = new DaoMaster(database);
+        mDaoSession = daoMaster.newSession();
+    }
+
+    public DaoSession getDaoSession() {
+        return mDaoSession;
+    }
+
+    private void initLogger() {
+        //DEBUG版本才打控制台log
+        if (BuildConfig.DEBUG) {
+            Logger.addLogAdapter(new AndroidLogAdapter(PrettyFormatStrategy.newBuilder().
+                    tag(getString(R.string.app_name)).build()));
+        }
+        //把log存到本地
+        Logger.addLogAdapter(new DiskLogAdapter(TxtFormatStrategy.newBuilder().
+                tag(getString(R.string.app_name)).build(getPackageName(), getString(R.string.app_name))));
+    }
+
     private void initBugly() {
         // 获取当前包名
         String packageName = getApplicationContext().getPackageName();
@@ -126,29 +158,10 @@ public class WanAndroidApp extends Application implements HasActivityInjector {
         CrashReport.initCrashReport(getApplicationContext(), Constants.BUGLY_ID, false, strategy);
     }
 
-    private void initGreenDao() {
-        DaoMaster.DevOpenHelper devOpenHelper = new DaoMaster.DevOpenHelper(this, Constants.DB_NAME);
-        SQLiteDatabase database = devOpenHelper.getWritableDatabase();
-        DaoMaster daoMaster = new DaoMaster(database);
-        mDaoSession = daoMaster.newSession();
-    }
 
-    public DaoSession getmDaoSession() {
-        return mDaoSession;
-    }
-
-    private void initLogger() {
-        if (BuildConfig.DEBUG) {
-            Logger.addLogAdapter(new AndroidLogAdapter(PrettyFormatStrategy.newBuilder().
-                    tag(getString(R.string.app_name)).build()));
-        }
-        //把log 存到本地
-        Logger.addLogAdapter(new DiskLogAdapter(TxtFormatStrategy.newBuilder().tag(getString(R.string.app_name)).build(getPackageName(), getString(R.string.app_name))));
-    }
 
     @Override
     public AndroidInjector<Activity> activityInjector() {
         return mAndroidInjector;
     }
-
 }

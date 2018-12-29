@@ -75,6 +75,7 @@ public class WanAndroidApp extends Application implements HasActivityInjector {
     public static RefWatcher getRefWatcher(Context context) {
         WanAndroidApp application = (WanAndroidApp) context.getApplicationContext();
         return application.refWatcher;
+        dfdfdfd
     }
 
     @Override
